@@ -3,7 +3,7 @@ package controllers
 import java.util.List
 import java.util.regex.Matcher
 import java.util.regex.Pattern
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import play.Logger
 import play.api.libs.ws.WS
 import play.api.mvc._;
@@ -11,6 +11,8 @@ import models.User
 import scala.util.matching.Regex
 import com.restfb.DefaultFacebookClient
 import com.restfb.types._
+import concurrent.Await
+import concurrent.duration._
 
 object Facebook extends Controller {
 
@@ -26,7 +28,7 @@ object Facebook extends Controller {
   def login2(code: String) = Action {
     if (StringUtils.isNotBlank(code)) {
       val accessTokenUrl = "https://graph.facebook.com/oauth/access_token?client_id=" + APP_ID + "&client_secret=" + APP_SECRET + "&code=" + code + "&redirect_uri=" + redirectUrl
-      val accessTokenBody = WS.url(accessTokenUrl).get().value.get.body
+      val accessTokenBody = Await.result(WS.url(accessTokenUrl).get(), 10.seconds).body
       val regex = new Regex("access_token=(.*)&expires=(.*)")
       accessTokenBody match {
         case regex(accessToken, expires) => {

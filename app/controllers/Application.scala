@@ -24,4 +24,10 @@ object Application extends Controller {
   def logout = Action {
     Redirect(controllers.routes.Application.index).withNewSession
   }
+  
+  def users = Action {
+    val users = User.findAll
+    Ok(views.html.users(users))
+  }
+  
 }

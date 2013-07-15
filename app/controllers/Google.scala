@@ -8,6 +8,8 @@ import play.api.libs.ws.WS
 import play.api.mvc._
 import models.User
 import anorm.NotAssigned
+import concurrent.Await
+import concurrent.duration._
 
 object Google extends Controller {
   
@@ -26,10 +28,11 @@ object Google extends Controller {
 
   def oauth2callback(state: String, code: String) = Action {
     val postBody = "code=" + code + "&client_id=" + clientId + "&client_secret=" + clientSecret + "&redirect_uri=" + redirectUrl + "&grant_type=authorization_code"
-    val body = WS.url("https://accounts.google.com/o/oauth2/token").withHeaders("Content-Type" -> "application/x-www-form-urlencoded").post(postBody)
-    val accessJson = body.await.get.json
+    val post = WS.url("https://accounts.google.com/o/oauth2/token").withHeaders("Content-Type" -> "application/x-www-form-urlencoded").post(postBody)
+    val body = Await.result(post, 10.seconds)
+    val accessJson = body.json
     val accessToken = strip((accessJson \ "access_token").toString)
-    val userJson = WS.url("https://www.googleapis.com/oauth2/v1/userinfo?access_token=" + accessToken).get.await.get.json
+    val userJson = Await.result(WS.url("https://www.googleapis.com/oauth2/v1/userinfo?access_token=" + accessToken).get(), 10.seconds).json
     val user = getOrCreateUser(userJson)
     Redirect(controllers.routes.Application.index).withSession("connected" -> user.email)
   }
